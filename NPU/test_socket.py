@@ -35,9 +35,7 @@ def clientthread(conn):
         
         #Receiving from client
         data = conn.recv(10240)
-        if not data:
-            break
-        data = np.frombuffer(data, dtype=np.uint8).reshape(-1, 3)
+        data = np.frombuffer(data, dtype=np.uint8).reshape(-1, 5)
         print(data)
     
         # conn.sendall(reply)

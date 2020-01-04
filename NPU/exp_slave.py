@@ -35,25 +35,6 @@ def clip(x, a, b):
     if x>b: x=b
     return x
 
-class Tracker:
-    def __init__(self, ):
-        self.initlized = False
-        self.position = [0, 0, 0, 0]
-        self.velocity = [0, 0, 0, 0]
-
-    def predict(self):
-        box = [0, 0, 0, 0]
-        for i in range(4):
-            box[i] = self.position[i] + self.velocity[i]
-        return box
-
-    def update(self, rect):
-        for i in range(4):
-            v_tmp = rect[i] - self.position[i]
-            self.position[i] = self.position[i] + self.velocity[i]
-            self.position[i] = 0.5*self.position[i] + 0.5*rect[i]
-            self.velocity[i] = 0.5*self.v_tmp + 0.5*self.velocity[i]
-
 
 ############################
 # Init lcd
@@ -152,9 +133,11 @@ while(True):
             info += i.index().to_bytes(1, 0)
             info += x.to_bytes(1, 0)
             info += y.to_bytes(1, 0)
+            info += w.to_bytes(1, 0)
+            info += h.to_bytes(1, 0)
             a = img.draw_rectangle(i.rect())
-    sock.send(info)
     a = lcd.display(img)
+    sock.send(info)
 a = kpu.deinit(task)
 
 sock.close()
