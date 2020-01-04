@@ -13,11 +13,10 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
-from django.conf.urls.static import static
-from RatToolbox import settings
+from django.urls import path
+from live_experiment.views import *
+
 urlpatterns = [
-    path('', admin.site.urls),
-    path('exp/', include('live_experiment.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('add', add_data),
+    path('<int:exp_id>', view_exp),
+]

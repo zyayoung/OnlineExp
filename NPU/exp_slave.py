@@ -4,7 +4,7 @@
 
 SSID        = "TP-LINK_AB74"
 PASSWORD    = "young12345"
-MASTER_IP   = "192.168.0.112"
+MASTER_IP   = "192.168.1.13"
 DEVICE_NAME = "001"
 
 import lcd
