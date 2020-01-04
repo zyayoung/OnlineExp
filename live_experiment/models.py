@@ -18,17 +18,12 @@ class DetectorSlave(models.Model):
 
 
 class Experiment(models.Model):
-    STATE_TYPES = (
-        ("WT", 'Waiting'),
-        ("PR", 'Processing'),
-        ("DE", 'Done'),
-        ("FE", 'File Format Not Correct'),
-    )
-
     name = models.TextField(default="Untitled")
     createTime = models.DateTimeField(auto_now_add=True)
-    state = models.CharField(choices=STATE_TYPES, max_length=4, default="WT")
-    slave = models.ForeignKey(DetectorSlave, on_delete=models.SET_NULL, null=True)
+    slave = models.ForeignKey(DetectorSlave, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def state(self):
+        return "running" if self.slave else "waiting"
 
 
 class Box(models.Model):

@@ -11,7 +11,6 @@ class DetectorSlaveAdmin(admin.ModelAdmin):
 
 class ExperimentAdmin(admin.ModelAdmin):
     list_display = ('name', 'state', 'createTime')
-    list_filter = ('state',)
 
     def add_view(self, request, extra_context=None):
         # self.fields = ('name', 'taskType', 'inputVideoFile')

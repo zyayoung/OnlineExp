@@ -5,11 +5,13 @@
 import socket
 import sys
 from threading import *
+from urllib.request import urlopen
 
 import numpy as np
 
 HOST = '0.0.0.0'    # Symbolic name meaning all available interfaces
 PORT = 3456    # Arbitrary non-privileged port
+MASTER_URL = "http://127.0.0.1:8000/exp/add"
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print('Socket created')
@@ -29,13 +31,17 @@ def clientthread(conn):
     # conn.send('Welcome to the server. Type something and hit enter\n') #send only takes string
     
     #infinite loop so that function do not terminate and thread do not end.
-    name = conn.recv(10240)
+    name = conn.recv(10240).decode()
     print(f"Name: {name}")
     while True:
         
         #Receiving from client
         data = conn.recv(10240)
         data = np.frombuffer(data, dtype=np.uint8).reshape(-1, 5)
+        for d in data:
+            url = f"{MASTER_URL}?slave_name={name}&trk_id={d[0]}&x={d[1]}&y={d[2]}&w={d[3]}&h={d[4]}"
+            upload_thread = Thread(target=urlopen, args=(url,), daemon=True)
+            upload_thread.start()
         print(data)
     
         # conn.sendall(reply)
