@@ -16,7 +16,9 @@ Including another URLconf
 from django.urls import path
 from live_experiment.views import *
 
+app_name = 'exp'
+
 urlpatterns = [
     path('add', add_data),
-    path('<int:exp_id>', view_exp),
+    path('<int:exp_id>', view_exp, name='detail'),
 ]

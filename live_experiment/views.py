@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.shortcuts import render
 from .models import DetectorSlave, Experiment, Box
 
 from threading import *
@@ -37,10 +38,19 @@ def add_data(request):
 
 def view_exp(request, exp_id):
     exp = Experiment.objects.get(id=exp_id)
+    boxes = Box.objects.filter(exp=exp)
     html = ""
-    for box in Box.objects.filter(exp=exp):
+    speed_data = []
+    coord_data = []
+    last_pos = None
+    for box in boxes:
         html += f"{box.trk_id} {box.x} {box.y} {box.w} {box.h}\n"
-    return HttpResponse(html)
+        if last_pos:
+            v = ((box.x-last_pos[0])**2+(box.y-last_pos[1])**2)**0.5 / (box.time.timestamp() - last_pos[2])
+            speed_data.append([box.time.timestamp(), v])
+        last_pos = (box.x, box.y, box.time.timestamp())
+        coord_data.append([box.x, box.y])
+    return render(request, 'live_experiment/exp.html', locals())
 
 
 def client_thread(conn):
@@ -48,12 +58,12 @@ def client_thread(conn):
     print(f"Name: {slave_name}")
     while True:
         data = conn.recv(10240)
-        data = np.frombuffer(data, dtype=np.uint8).reshape(-1, 5)
-        for d in data:
-            trk_id, x, y, w, h = d
-            add_box(slave_name, x, y, w, h, trk_id)
-            # upload_thread = Thread(target=add_box, args=(slave_name, x, y, w, h, trk_id), daemon=True)
-            # upload_thread.start()
+        data = np.frombuffer(data, dtype=np.uint8).reshape(-1, 6)
+        d = data[data[..., -1].argmax()]
+        trk_id, x, y, w, h, score = d
+        add_box(slave_name, x, y, w, h, trk_id)
+        # upload_thread = Thread(target=add_box, args=(slave_name, x, y, w, h, trk_id), daemon=True)
+        # upload_thread.start()
         print(data)
 
 

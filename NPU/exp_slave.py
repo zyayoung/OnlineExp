@@ -135,6 +135,7 @@ while(True):
             info += y.to_bytes(1, 0)
             info += w.to_bytes(1, 0)
             info += h.to_bytes(1, 0)
+            info += int(i.value()*255).to_bytes(1, 0)
             a = img.draw_rectangle(i.rect())
     a = lcd.display(img)
     sock.send(info)
