@@ -39,12 +39,10 @@ def add_data(request):
 def view_exp(request, exp_id):
     exp = Experiment.objects.get(id=exp_id)
     boxes = Box.objects.filter(exp=exp)
-    html = ""
     speed_data = []
     coord_data = []
     last_pos = None
     for box in boxes:
-        html += f"{box.trk_id} {box.x} {box.y} {box.w} {box.h}\n"
         if last_pos:
             v = ((box.x-last_pos[0])**2+(box.y-last_pos[1])**2)**0.5 / (box.time.timestamp() - last_pos[2])
             speed_data.append([box.time.timestamp(), v])
@@ -55,7 +53,7 @@ def view_exp(request, exp_id):
 
 def client_thread(conn):
     slave_name = conn.recv(10240).decode()
-    print(f"Name: {slave_name}")
+    print("Name: "+slave_name)
     while True:
         data = conn.recv(10240)
         data = np.frombuffer(data, dtype=np.uint8).reshape(-1, 6)
