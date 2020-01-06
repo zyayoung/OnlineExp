@@ -1,74 +1,143 @@
 {% extends 'base.html' %}
 {% block title %}Experiment Detail{% endblock %}
 {% block content %}
-<div id="main1" class="chart" style="height: 600px;"></div>
-<div id="main2" class="chart" style="height: 600px;"></div>
+    <h1>{{ exp.name }}</h1>
+    <div class="container">
+    <div class="row">
+        <div class="col-lg">
+            <img src="{{ image_url }}">
+        </div>
+        <div class="col-lg">
+            <table class="table">
+              <caption>Experiment statastis</caption>
+              <tbody>
+                <tr>
+                  <td>Created Time</td>
+                  <td>{{ exp.createTime }}</td>
+                </tr>
+                <tr>
+                  <td>Begin Time</td>
+                  <td>{{ begin_time }}</td>
+                </tr>
+                <tr>
+                  <td>End Time</td>
+                  <td>{{ end_time }}</td>
+                </tr>
+                <tr>
+                  <td>Duration</td>
+                  <td>{{ duration }}</td>
+                </tr>
+              </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+<div id="heatmap" class="chart" style="height: 600px;"></div>
+<div id="speed_plot" class="chart" style="height: 600px;"></div>
+<div id="path_plot" class="chart" style="height: 600px;"></div>
+
 {% endblock %}
 {% block script %}
-<script src="https://cdn.bootcss.com/echarts/4.2.0-rc.2/echarts.min.js"></script>
-<script>
-var data = {{ speed_data|safe }};
-data.forEach(function (node) {
-   node[0]*=1000;
-});
-option = {
-    title: {
-        text: '{{ exp.name }}',
-        subtext: 'speed (px/s)'
-    },
-    tooltip: {
-        trigger: 'axis',
-        axisPointer: {
+    <script src="https://cdn.bootcss.com/echarts/4.2.0-rc.2/echarts.min.js"></script>
+    <script>
+    option = {
+        title: {
+            text: 'Speed',
+            subtext: 'Pixel/s'
+        },
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                animation: false
+            }
+        },
+        xAxis: {
+        },
+        yAxis: {
+            type: 'value',
+            min: 0
+        },
+        dataZoom: [{
+            type: 'inside',
+            start: 0,
+            end: 100
+        }, {
+            start: 0,
+            end: 100,
+            handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+            handleSize: '80%',
+            handleStyle: {
+                color: '#fff',
+                shadowBlur: 3,
+                shadowColor: 'rgba(0, 0, 0, 0.6)',
+                shadowOffsetX: 2,
+                shadowOffsetY: 2
+            }
+        }],
+        series: [{
+            type: 'line',
+            hoverAnimation: false,
+            data: {{ speed_data|safe }}
+        }]
+    };
+    var myChart = echarts.init(document.getElementById('speed_plot'));
+    myChart.setOption(option);
+    </script>
+    <script>
+    option = {
+        title: {
+            text: 'Trajectory'
+        },
+        xAxis: {},
+        yAxis: {},
+        series: [{
+            data: {{ coord_data | safe }},
+            type: 'line',
+            smooth: true
+        }]
+    };
+    var myChart = echarts.init(document.getElementById('path_plot'));
+    myChart.setOption(option);
+    </script>
+    <script>
+    option = {
+        title: {
+            text: 'Time Heatmap',
+            subtext: 'Seconds'
+        },
+        tooltip: {},
+        xAxis: {
+            type: 'category',
+            data: {{ heatmap_xData | safe }}
+        },
+        yAxis: {
+            type: 'category',
+            data: {{ heatmap_yData | safe }}
+        },
+        visualMap: {
+            min: 0,
+            max: {{heatmap_max}},
+            calculable: true,
+            realtime: false,
+            inRange: {
+                color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+            }
+        },
+        series: [{
+            name: 'Gaussian',
+            type: 'heatmap',
+            data: {{ heatmap_data | safe}},
+            emphasis: {
+                itemStyle: {
+                    borderColor: '#333',
+                    borderWidth: 1
+                }
+            },
+            progressive: 1000,
             animation: false
-        }
-    },
-    xAxis: {
-        type: 'time',
-        splitLine: {
-            show: false
-        }
-    },
-    yAxis: {
-        type: 'value',
-        min: 0,
-        max: 'dataMax'
-    },
-    dataZoom: [{
-        type: 'inside',
-        start: 0,
-        end: 100
-    }, {
-        start: 0,
-        end: 100,
-        handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
-        handleSize: '80%',
-        handleStyle: {
-            color: '#fff',
-            shadowBlur: 3,
-            shadowColor: 'rgba(0, 0, 0, 0.6)',
-            shadowOffsetX: 2,
-            shadowOffsetY: 2
-        }
-    }],
-    series: [{
-        type: 'line',
-        hoverAnimation: false,
-        data: data
-    }]
-};
-var myChart = echarts.init(document.getElementById('main1'));
-myChart.setOption(option);
-</script>
-<script>
-option = {
-    xAxis: {},
-    yAxis: {},
-    series: [{
-        data: {{ coord_data | safe }},
-        type: 'line'
-    }]
-};
-var myChart = echarts.init(document.getElementById('main2'));
-myChart.setOption(option);
-</script>
+        }]
+    };
+    var myChart = echarts.init(document.getElementById('heatmap'));
+    myChart.setOption(option);
+    </script>
 {% endblock %}

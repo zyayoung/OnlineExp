@@ -6,8 +6,7 @@ from django.urls import reverse
 
 
 class DetectorSlaveAdmin(admin.ModelAdmin):
-    list_display = ('name', 'state', 'createTime')
-    list_filter = ('state', )
+    list_display = ('name', 'createTime', 'lastTime')
 
 
 class ExperimentAdmin(admin.ModelAdmin):

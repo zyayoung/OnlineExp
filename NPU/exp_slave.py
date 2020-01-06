@@ -138,6 +138,11 @@ while(True):
             info += int(i.value()*255).to_bytes(1, 0)
             a = img.draw_rectangle(i.rect())
     a = lcd.display(img)
+    img = img.compress()
+    size = img.size()
+    sent = 0
+    while sent < size:
+        sent += sock.send(bytearray(img[sent:]))
     sock.send(info)
 a = kpu.deinit(task)
 
