@@ -35,10 +35,21 @@
 <div id="heatmap" class="chart" style="height: 600px;"></div>
 <div id="speed_plot" class="chart" style="height: 600px;"></div>
 <div id="path_plot" class="chart" style="height: 600px;"></div>
+<div id="distribution_plot" class="chart" style="height: 600px;"></div>
 
 {% endblock %}
 {% block script %}
     <script src="https://cdn.bootcss.com/echarts/4.2.0-rc.2/echarts.min.js"></script>
+    <script>
+    let speed_data = {{ speed_data|safe }};
+    let coord_data = {{ coord_data|safe }};
+    let coord_time_data = {{ coord_time_data|safe }};
+    let heatmap_xData = {{ heatmap_xData|safe }};
+    let heatmap_yData = {{ heatmap_yData|safe }};
+    let heatmap_data = {{ heatmap_data|safe }};
+    let heatmap_max = {{ heatmap_max }};
+    let speed_distribution_data = {{ speed_distribution_data|safe }};
+    </script>
     <script>
     option = {
         title: {
@@ -77,11 +88,11 @@
         series: [{
             type: 'line',
             hoverAnimation: false,
-            data: {{ speed_data|safe }}
+            data: speed_data
         }]
     };
-    var myChart = echarts.init(document.getElementById('speed_plot'));
-    myChart.setOption(option);
+    var speedChart = echarts.init(document.getElementById('speed_plot'));
+    speedChart.setOption(option);
     </script>
     <script>
     option = {
@@ -90,14 +101,50 @@
         },
         xAxis: {},
         yAxis: {},
+        brush: {
+            toolbox: ['rect'],
+            xAxisIndex: 'all',
+            yAxisIndex: 'all',
+            transformable: false,
+            throttleType: 'debounce',
+            removeOnClick: false,
+            brushStyle: {
+              borderWidth: 1,
+              color: 'rgba(255,36,36,0.2)',
+              borderColor: '#ff2424'
+            }
+        },
         series: [{
-            data: {{ coord_data | safe }},
+            data: coord_data,
             type: 'line',
             smooth: true
-        }]
+        }],
     };
-    var myChart = echarts.init(document.getElementById('path_plot'));
-    myChart.setOption(option);
+    var trajectoryChart = echarts.init(document.getElementById('path_plot'));
+    trajectoryChart.setOption(option);
+    trajectoryChart.on('brushSelected', renderBrushed);
+    function renderBrushed(params) {
+        var brushComponent = params.batch[0];
+        if(brushComponent.areas[0] !== undefined){
+            let coordRanges = brushComponent.areas[0].coordRanges[0],
+                xMin = coordRanges[0][0],
+                yMin = coordRanges[1][0],
+                xMax = coordRanges[0][1],
+                yMax = coordRanges[1][1];
+                total_time = 0;
+            for(var i = 0; i < coord_data.length; ++i){
+                let x = coord_data[i][0], y = coord_data[i][1];
+                if(x >= xMin && x <= xMax && y >=yMin && y <= yMax){
+                    total_time += coord_time_data[i][2];
+                }
+            }
+            trajectoryChart.setOption({
+                title: {
+                    text: 'Trajectory ' + total_time.toFixed(2) + ' s'
+                }
+            });
+        }
+    }
     </script>
     <script>
     option = {
@@ -108,15 +155,15 @@
         tooltip: {},
         xAxis: {
             type: 'category',
-            data: {{ heatmap_xData | safe }}
+            data: heatmap_xData
         },
         yAxis: {
             type: 'category',
-            data: {{ heatmap_yData | safe }}
+            data: heatmap_yData
         },
         visualMap: {
             min: 0,
-            max: {{heatmap_max}},
+            max: heatmap_max,
             calculable: true,
             realtime: false,
             inRange: {
@@ -126,7 +173,7 @@
         series: [{
             name: 'Gaussian',
             type: 'heatmap',
-            data: {{ heatmap_data | safe}},
+            data: heatmap_data,
             emphasis: {
                 itemStyle: {
                     borderColor: '#333',
@@ -137,7 +184,53 @@
             animation: false
         }]
     };
-    var myChart = echarts.init(document.getElementById('heatmap'));
-    myChart.setOption(option);
+    var heatChart = echarts.init(document.getElementById('heatmap'));
+    heatChart.setOption(option);
+    </script>
+    <script>
+        option = {
+            title: {
+                text: 'Speed Distribution'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    animation: false
+                }
+            },
+            xAxis: {
+                name: 'Speed\n(Pixel/s)',
+                type: 'value',
+                min: 0
+            },
+            yAxis: {
+                name: 'Frequency',
+                type: 'value',
+                min: 0
+            },
+            dataZoom: [{
+                type: 'inside',
+                start: 0,
+                end: 100
+            }],
+            series: [{
+                type: 'line',
+                hoverAnimation: false,
+                data: speed_distribution_data,
+                areaStyle: {}
+            }]
+        };
+        /*option = {
+            xAxis: {type: 'value'},
+            yAxis: {type: 'value'},
+            series: [{
+                data: speed_distribution_data,
+                type: 'line',
+                smooth: true,
+                areaStyle: {}
+            }]
+        }*/
+        var distributionChart = echarts.init(document.getElementById('distribution_plot'));
+        distributionChart.setOption(option);
     </script>
 {% endblock %}

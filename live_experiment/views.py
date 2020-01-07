@@ -11,7 +11,8 @@ import datetime
 
 def add_box(slave_name, x, y, w, h, trk_id):
     if not DetectorSlave.objects.filter(name=slave_name).exists():
-        slave = DetectorSlave.objects.create(lastTime=datetime.datetime.now(tz=timezone.utc))
+        slave = DetectorSlave.objects.create(lastTime=datetime.datetime.now(
+            tz=timezone.utc))
         slave.name = slave_name
     else:
         slave = DetectorSlave.objects.get(name=slave_name)
@@ -43,24 +44,38 @@ def view_exp(request, exp_id):
     except ValueError:
         image_url = "#"
     boxes = Box.objects.filter(exp=exp)
+    total_count = len(boxes)
     speed_data = []
     coord_data = []
+    coord_time_data = []
     heatmap_data = np.zeros((32, 24))
-    last_pos = None
+    last_pos = []
     start_time = boxes[0].time.timestamp()
+    max_speed = 0
+    speed_distribution_data = [0 for i in range(100)]
     for box in boxes:
+        dt = 0
         if last_pos:
             dt = box.time.timestamp() - last_pos[2]
-            v = ((box.x-last_pos[0])**2+(box.y-last_pos[1])**2)**0.5 / dt
-            heatmap_data[int(box.x/10), int(box.y/10)] += dt
+            v = ((box.x - last_pos[0])**2 + (box.y - last_pos[1])**2)**0.5 / dt
+            max_speed = max(v, max_speed)
+            heatmap_data[int(box.x / 10), int(box.y / 10)] += dt
             speed_data.append([box.time.timestamp() - start_time, v])
         last_pos = (box.x, box.y, box.time.timestamp())
         coord_data.append([box.x, box.y])
+        coord_time_data.append([box.x, box.y, dt])
+    for t, v in speed_data:
+        speed_distribution_data[int(v / max_speed * 99)] += 1
+
+    speed_distribution_data = [[
+        i / 100 * max_speed, speed_distribution_data[i] / total_count
+    ] for i in range(100)]
 
     heatmap_max = heatmap_data.max()
     heatmap_xData = list(range(32))
     heatmap_yData = list(range(24))
-    heatmap_data = [[i, j, heatmap_data[i, j]] for i in heatmap_xData for j in heatmap_yData]
+    heatmap_data = [[i, j, heatmap_data[i, j]] for i in heatmap_xData
+                    for j in heatmap_yData]
 
     begin_time = boxes.earliest('time').time
     end_time = boxes.latest('time').time
@@ -91,7 +106,7 @@ def socket_daemon():
         conn, addr = s.accept()
         print('Connected with ' + addr[0] + ':' + str(addr[1]))
 
-        t = Thread(target=client_thread, args=(conn,), daemon=True)
+        t = Thread(target=client_thread, args=(conn, ), daemon=True)
         t.start()
 
 
