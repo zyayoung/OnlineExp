@@ -1,3 +1,4 @@
+from django.core.files.base import ContentFile
 from django.http import HttpResponse
 from django.shortcuts import render
 from .models import DetectorSlave, Experiment, Box
@@ -20,8 +21,18 @@ def add_box(slave_name, x, y, w, h, trk_id):
     slave.lastTime = now
     slave.save()
     for exp in Experiment.objects.filter(slave=slave).all():
-        box = Box.objects.create(exp=exp, x=x, y=y, w=w, h=h, trk_id=trk_id)
-        # box.save()
+        box = Box.objects.create(exp=exp, x=np.clip(x, 0, 319), y=np.clip(y, 0, 239), w=w, h=h, trk_id=trk_id)
+
+
+def add_img(slave_name, image_bytes):
+    if not DetectorSlave.objects.filter(name=slave_name).exists():
+        slave = DetectorSlave.objects.create(lastTime=datetime.datetime.now(
+            tz=timezone.utc))
+        slave.name = slave_name
+    else:
+        slave = DetectorSlave.objects.get(name=slave_name)
+    for exp in Experiment.objects.filter(slave=slave).all():
+        exp.previewImage.save(str(datetime.datetime.now())+'.jpg', ContentFile(image_bytes))
 
 
 def add_data(request):
@@ -50,7 +61,10 @@ def view_exp(request, exp_id):
     coord_time_data = []
     heatmap_data = np.zeros((32, 24))
     last_pos = []
-    start_time = boxes[0].time.timestamp()
+    if not boxes.exists():
+        return render(request, 'live_experiment/exp.html', locals())
+    begin_time = boxes.earliest('time').time
+    end_time = boxes.latest('time').time
     max_speed = 0
     speed_distribution_data = [0 for i in range(100)]
     for box in boxes:
@@ -60,7 +74,7 @@ def view_exp(request, exp_id):
             v = ((box.x - last_pos[0])**2 + (box.y - last_pos[1])**2)**0.5 / dt
             max_speed = max(v, max_speed)
             heatmap_data[int(box.x / 10), int(box.y / 10)] += dt
-            speed_data.append([box.time.timestamp() - start_time, v])
+            speed_data.append([box.time.timestamp() - begin_time.timestamp(), v])
         last_pos = (box.x, box.y, box.time.timestamp())
         coord_data.append([box.x, box.y])
         coord_time_data.append([box.x, box.y, dt])
@@ -77,8 +91,7 @@ def view_exp(request, exp_id):
     heatmap_data = [[i, j, heatmap_data[i, j]] for i in heatmap_xData
                     for j in heatmap_yData]
 
-    begin_time = boxes.earliest('time').time
-    end_time = boxes.latest('time').time
+
     duration = end_time - begin_time
     return render(request, 'live_experiment/exp.html', locals())
 
@@ -88,14 +101,25 @@ def socket_daemon():
 
     def client_thread(conn):
         slave_name = conn.recv(10240).decode()
+        picture_buffer = b""
         print("Name: " + slave_name)
         while True:
             data = conn.recv(10240)
-            data = np.frombuffer(data, dtype=np.uint8).reshape(-1, 6)
-            d = data[data[..., -1].argmax()]
-            trk_id, x, y, w, h, score = d
-            add_box(slave_name, x, y, w, h, trk_id)
-            print(data)
+            if data.startswith(b"Detections: "):
+                data = np.frombuffer(data[12:], dtype=np.uint16).reshape(-1, 6)
+                d = data[data[..., -1].argmax()]
+                trk_id, x, y, w, h, score = d
+                add_box(slave_name, x, y, w, h, trk_id)
+                print(data)
+                if picture_buffer:
+                    add_img(slave_name, picture_buffer)
+                picture_buffer = b""
+            elif data.startswith(b"\xff\xd8\xff\xe0"):
+                if picture_buffer:
+                    add_img(slave_name, picture_buffer)
+                picture_buffer = data
+            else:
+                picture_buffer += data
 
     HOST = '0.0.0.0'  # Symbolic name meaning all available interfaces
     PORT = 3456  # Arbitrary non-privileged port

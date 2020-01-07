@@ -118,32 +118,36 @@ lcd.draw_string(0, 18*8, "Done!", FONT_COLOT, lcd.BLACK)
 # Main loop
 ############################
 
-info = b""
+frame_idx = 0
 while(True):
+    frame_idx += 1
     img = sensor.snapshot()
+    if frame_idx % 300 == 30:
+        # send image
+        lcd.draw_string(0, 18*0, "Sending Image ...", FONT_COLOT, lcd.BLACK)
+        img = img.compress()
+        size = img.size()
+        sent = 0
+        while sent < size:
+            sent += sock.send(bytearray(img[sent:]))
+        continue
     code = kpu.run_yolo2(task, img)
-    info = b""
     if code:
+        info = b"Detections: "
         for i in code:
             print(i)
             x, y, w, h = i.rect()
             x += w//2
             y += h//2
-            x = clip(x, 0, 255)
-            info += i.index().to_bytes(1, 0)
-            info += x.to_bytes(1, 0)
-            info += y.to_bytes(1, 0)
-            info += w.to_bytes(1, 0)
-            info += h.to_bytes(1, 0)
-            info += int(i.value()*255).to_bytes(1, 0)
+            info += i.index().to_bytes(2, "little")
+            info += x.to_bytes(2, "little")
+            info += y.to_bytes(2, "little")
+            info += w.to_bytes(2, "little")
+            info += h.to_bytes(2, "little")
+            info += int(i.value()*255).to_bytes(2, "little")
             a = img.draw_rectangle(i.rect())
+        sock.send(info)
     a = lcd.display(img)
-    img = img.compress()
-    size = img.size()
-    sent = 0
-    while sent < size:
-        sent += sock.send(bytearray(img[sent:]))
-    sock.send(info)
 a = kpu.deinit(task)
 
 sock.close()
