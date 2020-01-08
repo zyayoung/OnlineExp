@@ -13,7 +13,7 @@
     <thead>
         <tr>
             <th>Name</th>
-            <th>Create time</th>
+            <th class="d-none d-md-table-cell">Create time</th class="d-none d-md-table-cell">
             <th>Detector</th>
             <th>Last Active</th>
             <th>Action</th>
@@ -24,7 +24,7 @@
         {% for experiment in online_exp_list %}
             <tr>
             <td><a href="{% url 'exp:detail' experiment.id %}">{{ experiment.name }}</a></td>
-            <td>{{ experiment.createTime }}</td>
+            <td class="d-none d-md-table-cell">{{ experiment.createTime }}</td>
             <td>{{ experiment.slave }}</td>
             <td>{{ experiment.last_active }}</td>
             <td><a href="{% url 'exp:stop' experiment.id %}">Stop</a></td>
@@ -42,7 +42,7 @@
         <thead>
           <tr>
             <th>Name</th>
-            <th>Create time</th>
+            <th class="d-none d-md-table-cell">Create time</th class="d-none d-md-table-cell">
             <th>Action</th>
         </tr>
         </thead>
@@ -50,7 +50,7 @@
             {% for experiment in page_obj %}
                 <tr>
                 <td><a href="{% url 'exp:detail' experiment.id %}">{{ experiment.name }}</a></td>
-                <td>{{ experiment.createTime }}</td>
+                <td class="d-none d-md-table-cell">{{ experiment.createTime }}</td>
                 <td>
                     <form action="" method="POST">
                         {% csrf_token %}
