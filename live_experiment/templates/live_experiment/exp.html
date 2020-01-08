@@ -51,9 +51,33 @@
     let speed_distribution_data = {{ speed_distribution_data|safe }};
     </script>
     <script>
+    let avg_speed_in = function(start, end){
+        total_time = 0;
+        total_distance = 0;
+        max_time = speed_data[speed_data.length-1][0];
+        time_before = 0;
+        time_after = 0;
+        last_t = 0;
+        for(var i = 0; i < speed_data.length; ++i){
+            let t = speed_data[i][0], v = speed_data[i][1];
+            dt = t-last_t;
+            last_t = t;
+            if(t >= start*max_time){
+                if(t <= end*max_time){
+                    time_after = t;
+                    total_distance += v*dt;
+                }
+            }
+            else{
+                time_before = t;
+            }
+        }
+        total_time = time_after - time_before;
+        return (total_distance/total_time).toFixed(2);
+    }
     option = {
         title: {
-            text: 'Speed',
+            text: 'Speed (Avg. ' + avg_speed_in(0, 1) + ')',
             subtext: 'Pixel/s'
         },
         tooltip: {
@@ -88,11 +112,19 @@
         series: [{
             type: 'line',
             hoverAnimation: false,
-            data: speed_data
+            data: speed_data,
+            animation: false,
         }]
     };
     var speedChart = echarts.init(document.getElementById('speed_plot'));
     speedChart.setOption(option);
+    speedChart.on('datazoom', calc_mean);
+    function calc_mean(params) {
+        speedChart.setOption({
+        title: {
+            text: 'Speed (Avg. ' + avg_speed_in(params.start/100, params.end/100) + ')'
+        }});
+    }
     </script>
     <script>
     let total_time_in_RoI = function(xMin, yMin, xMax, yMax){
@@ -129,12 +161,14 @@
             name: 'Trajectory',
             data: coord_data,
             type: 'line',
+            animation: false,
             smooth: true
         },
         {% for roi in exp.region_of_interests.all %}
         {
             name: '{{ roi.name }} ('+total_time_in_RoI({{roi.x1}},{{roi.y1}},{{roi.x2}},{{roi.y2}})+'s)',
             data: {{ roi.rect_data }},
+            animation: false,
             type: 'line'
         },
         {% endfor%}
@@ -242,6 +276,7 @@
                 type: 'line',
                 hoverAnimation: false,
                 data: speed_distribution_data,
+                animation: false,
                 areaStyle: {}
             }]
         };
