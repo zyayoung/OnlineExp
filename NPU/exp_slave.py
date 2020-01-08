@@ -99,7 +99,7 @@ lcd.draw_string(0, 18*6, "Initializing Camera...", FONT_COLOT, lcd.BLACK)
 sensor.reset()
 sensor.set_pixformat(sensor.RGB565)
 sensor.set_framesize(sensor.QVGA)
-sensor.set_hmirror(False)
+sensor.set_vflip(True)
 
 sensor.run(1)
 

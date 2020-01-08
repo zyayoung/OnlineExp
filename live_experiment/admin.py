@@ -11,6 +11,7 @@ class DetectorSlaveAdmin(admin.ModelAdmin):
 
 class ExperimentAdmin(admin.ModelAdmin):
     list_display = ('name', 'state', 'createTime')
+    filter_horizontal = ('region_of_interests',)
 
     def add_view(self, request, extra_context=None):
         # self.fields = ('name', 'taskType', 'inputVideoFile')
@@ -29,3 +30,4 @@ class ExperimentAdmin(admin.ModelAdmin):
 
 admin.site.register(Experiment, ExperimentAdmin)
 admin.site.register(DetectorSlave, DetectorSlaveAdmin)
+admin.site.register(RegionOfInterest)

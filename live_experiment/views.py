@@ -47,6 +47,8 @@ def add_data(request):
     html = "<html><body>Saved.</body></html>"
     return HttpResponse(html)
 
+def gaussian(x, mu, sig):
+  return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
 def view_exp(request, exp_id):
     exp = Experiment.objects.get(id=exp_id)
@@ -59,35 +61,46 @@ def view_exp(request, exp_id):
     speed_data = []
     coord_data = []
     coord_time_data = []
-    heatmap_data = np.zeros((32, 24))
+    heatmap_data = np.zeros((40, 30))
     last_pos = []
     if not boxes.exists():
         return render(request, 'live_experiment/exp.html', locals())
     begin_time = boxes.earliest('time').time
     end_time = boxes.latest('time').time
-    max_speed = 0
-    speed_distribution_data = [0 for i in range(100)]
+    bins = 50
+    speed_distribution_data = [0 for i in range(bins)]
+    dt_data = []
     for box in boxes:
         dt = 0
         if last_pos:
             dt = box.time.timestamp() - last_pos[2]
             v = ((box.x - last_pos[0])**2 + (box.y - last_pos[1])**2)**0.5 / dt
-            max_speed = max(v, max_speed)
-            heatmap_data[int(box.x / 10), int(box.y / 10)] += dt
+            heatmap_data[int(box.x / 8), int(box.y / 8)] += dt
             speed_data.append([box.time.timestamp() - begin_time.timestamp(), v])
+            dt_data.append(dt)
         last_pos = (box.x, box.y, box.time.timestamp())
         coord_data.append([box.x, box.y])
         coord_time_data.append([box.x, box.y, dt])
-    for t, v in speed_data:
-        speed_distribution_data[int(v / max_speed * 99)] += 1
+    speed_array = np.array(speed_data)[..., 1]
+    
+    # Remove inconsistent detections
+    max_speed = np.percentile(speed_array, 99)
+    speed_array[speed_array>max_speed] = max_speed
+
+    # Smooth speed
+    speed_array = np.convolve(speed_array, [0.05, 0.1, 0.2, 0.3, 0.2, 0.1, 0.05], mode='same')
+    speed_data = [[t[0], v] for t, v in zip(speed_data, speed_array)]
+    for (t, v), dt_data in zip(speed_data, dt_data):
+        if int(v / max_speed * bins) < bins:
+            speed_distribution_data[int(v / max_speed * bins)] += dt
 
     speed_distribution_data = [[
-        i / 100 * max_speed, speed_distribution_data[i] / total_count
-    ] for i in range(100)]
+        i / bins * max_speed, speed_distribution_data[i]
+    ] for i in range(bins)]
 
     heatmap_max = heatmap_data.max()
-    heatmap_xData = list(range(32))
-    heatmap_yData = list(range(24))
+    heatmap_xData = list(range(40))
+    heatmap_yData = list(range(30))
     heatmap_data = [[i, j, heatmap_data[i, j]] for i in heatmap_xData
                     for j in heatmap_yData]
 

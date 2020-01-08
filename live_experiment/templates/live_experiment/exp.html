@@ -95,10 +95,21 @@
     speedChart.setOption(option);
     </script>
     <script>
+    let total_time_in_RoI = function(xMin, yMin, xMax, yMax){
+        total_time = 0;
+        for(var i = 0; i < coord_data.length; ++i){
+            let x = coord_data[i][0], y = coord_data[i][1];
+            if(x >= xMin && x <= xMax && y >=yMin && y <= yMax){
+                total_time += coord_time_data[i][2];
+            }
+        }
+        return total_time.toFixed(2);
+    }
     option = {
         title: {
             text: 'Trajectory'
         },
+        legend: {},
         xAxis: {},
         yAxis: {},
         brush: {
@@ -115,10 +126,19 @@
             }
         },
         series: [{
+            name: 'Trajectory',
             data: coord_data,
             type: 'line',
             smooth: true
-        }],
+        },
+        {% for roi in exp.region_of_interests.all %}
+        {
+            name: '{{ roi.name }} ('+total_time_in_RoI({{roi.x1}},{{roi.y1}},{{roi.x2}},{{roi.y2}})+'s)',
+            data: {{ roi.rect_data }},
+            type: 'line'
+        },
+        {% endfor%}
+        ],
     };
     var trajectoryChart = echarts.init(document.getElementById('path_plot'));
     trajectoryChart.setOption(option);
@@ -131,16 +151,9 @@
                 yMin = coordRanges[1][0],
                 xMax = coordRanges[0][1],
                 yMax = coordRanges[1][1];
-                total_time = 0;
-            for(var i = 0; i < coord_data.length; ++i){
-                let x = coord_data[i][0], y = coord_data[i][1];
-                if(x >= xMin && x <= xMax && y >=yMin && y <= yMax){
-                    total_time += coord_time_data[i][2];
-                }
-            }
             trajectoryChart.setOption({
                 title: {
-                    text: 'Trajectory ' + total_time.toFixed(2) + ' s'
+                    text: 'Trajectory ' + total_time_in_RoI(xMin, yMin, xMax, yMax) + ' s'
                 }
             });
         }
