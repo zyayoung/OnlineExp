@@ -1,6 +1,8 @@
 from django.db import models
 import os
+import datetime
 
+from django.utils import timezone
 
 class DetectorSlave(models.Model):
     name = models.TextField(default="Untitled")
@@ -38,6 +40,9 @@ class Experiment(models.Model):
 
     def state(self):
         return "running" if self.slave else "waiting"
+
+    def last_active(self):
+        return datetime.datetime.now(tz=timezone.utc) - Box.objects.filter(exp=self).latest('time').time
     
     def __str__(self):
         return self.name

@@ -38,11 +38,22 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3" id="site_header">
         <div class="container">
             <!-- Brand and toggle get grouped for better mobile display -->
-            <a class="navbar-brand" href="/live_experiment/experiment/">
+            <a class="navbar-brand" href="/">
                 <!-- <img src="{% static 'img/favicon.png' %}" width="30" height="30" class="d-inline-block align-top" alt=""> -->
                 OnlineExp
             </a>
-            </div><!-- /.navbar-collapse -->
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    {% block navbar %}
+                    <li class="nav-item">
+                        <a href="{% url 'exp:list' %}" class="nav-link">
+                            Experiments
+                        </a>
+                    </li>
+                    {% endblock %}
+                </ul>
+            </div>
         </div><!-- /.container-fluid -->
     </nav>
 

@@ -1,6 +1,7 @@
 from django.core.files.base import ContentFile
-from django.http import HttpResponse
-from django.shortcuts import render
+from django.core.paginator import Paginator
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render, redirect
 from .models import DetectorSlave, Experiment, Box
 
 from threading import *
@@ -8,6 +9,26 @@ import numpy as np
 
 from django.utils import timezone
 import datetime
+
+
+def exp_list(request):
+    if "slave" in request.POST.keys():
+        slave = DetectorSlave.objects.filter(name=request.POST['slave']).get()
+        exp = Experiment.objects.filter(id=request.POST['exp']).get()
+        exp.slave = slave
+        exp.save()
+        return redirect('exp:list')
+
+    online_exp_list = Experiment.objects.filter(slave__isnull=False).order_by('id')
+    exp_list = Experiment.objects.filter(slave__isnull=True).order_by('id')
+    paginator = Paginator(exp_list, 25) # Show 25 contacts per page.
+
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    slaves = DetectorSlave.objects.filter(experiment__isnull=True)
+
+    return render(request, 'live_experiment/exp_list.html', locals())
 
 
 def add_box(slave_name, x, y, w, h, trk_id):
@@ -21,7 +42,7 @@ def add_box(slave_name, x, y, w, h, trk_id):
     slave.lastTime = now
     slave.save()
     for exp in Experiment.objects.filter(slave=slave).all():
-        box = Box.objects.create(exp=exp, x=np.clip(x, 0, 319), y=np.clip(y, 0, 239), w=w, h=h, trk_id=trk_id)
+        Box.objects.create(exp=exp, x=np.clip(x, 0, 319), y=np.clip(y, 0, 239), w=w, h=h, trk_id=trk_id)
 
 
 def add_img(slave_name, image_bytes):
@@ -45,10 +66,13 @@ def add_data(request):
     add_box(slave_name, x, y, w, h, trk_id)
 
     html = "<html><body>Saved.</body></html>"
-    return HttpResponse(html)
+    return HttpResponseRedirect()
 
-def gaussian(x, mu, sig):
-  return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+def stop_exp(request, exp_id):
+    exp = Experiment.objects.get(id=exp_id)
+    exp.slave = None
+    exp.save()
+    return redirect('exp:list')
 
 def view_exp(request, exp_id):
     exp = Experiment.objects.get(id=exp_id)

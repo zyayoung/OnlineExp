@@ -21,4 +21,6 @@ app_name = 'exp'
 urlpatterns = [
     path('add', add_data),
     path('<int:exp_id>', view_exp, name='detail'),
+    path('<int:exp_id>/stop', stop_exp, name='stop'),
+    path('', exp_list, name='list'),
 ]

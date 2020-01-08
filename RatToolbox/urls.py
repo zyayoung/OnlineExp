@@ -17,7 +17,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from RatToolbox import settings
+from django.shortcuts import redirect
+
+def root(request):
+    return redirect('exp:list')
+
 urlpatterns = [
-    path('', admin.site.urls),
+    path('', root),
+    path('admin/', admin.site.urls),
     path('exp/', include('live_experiment.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
