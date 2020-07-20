@@ -2,7 +2,7 @@ from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
-from .models import DetectorSlave, Experiment, Box
+from .models import DetectorSubordinate, Experiment, Box
 
 from threading import *
 import numpy as np
@@ -12,65 +12,65 @@ import datetime
 
 
 def exp_list(request):
-    if "slave" in request.POST.keys():
-        slave = DetectorSlave.objects.filter(name=request.POST['slave']).get()
+    if "subordinate" in request.POST.keys():
+        subordinate = DetectorSubordinate.objects.filter(name=request.POST['subordinate']).get()
         exp = Experiment.objects.filter(id=request.POST['exp']).get()
-        exp.slave = slave
+        exp.subordinate = subordinate
         exp.save()
         return redirect('exp:list')
 
-    online_exp_list = Experiment.objects.filter(slave__isnull=False).order_by('id')
-    exp_list = Experiment.objects.filter(slave__isnull=True).order_by('id')
+    online_exp_list = Experiment.objects.filter(subordinate__isnull=False).order_by('id')
+    exp_list = Experiment.objects.filter(subordinate__isnull=True).order_by('id')
     paginator = Paginator(exp_list, 25) # Show 25 contacts per page.
 
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    slaves = DetectorSlave.objects.filter(experiment__isnull=True)
+    subordinates = DetectorSubordinate.objects.filter(experiment__isnull=True)
 
     return render(request, 'live_experiment/exp_list.html', locals())
 
 
-def add_box(slave_name, x, y, w, h, trk_id):
-    if not DetectorSlave.objects.filter(name=slave_name).exists():
-        slave = DetectorSlave.objects.create(lastTime=datetime.datetime.now(
+def add_box(subordinate_name, x, y, w, h, trk_id):
+    if not DetectorSubordinate.objects.filter(name=subordinate_name).exists():
+        subordinate = DetectorSubordinate.objects.create(lastTime=datetime.datetime.now(
             tz=timezone.utc))
-        slave.name = slave_name
+        subordinate.name = subordinate_name
     else:
-        slave = DetectorSlave.objects.get(name=slave_name)
+        subordinate = DetectorSubordinate.objects.get(name=subordinate_name)
     now = datetime.datetime.now(tz=timezone.utc)
-    slave.lastTime = now
-    slave.save()
-    for exp in Experiment.objects.filter(slave=slave).all():
+    subordinate.lastTime = now
+    subordinate.save()
+    for exp in Experiment.objects.filter(subordinate=subordinate).all():
         Box.objects.create(exp=exp, x=np.clip(x, 0, 319), y=np.clip(y, 0, 239), w=w, h=h, trk_id=trk_id)
 
 
-def add_img(slave_name, image_bytes):
-    if not DetectorSlave.objects.filter(name=slave_name).exists():
-        slave = DetectorSlave.objects.create(lastTime=datetime.datetime.now(
+def add_img(subordinate_name, image_bytes):
+    if not DetectorSubordinate.objects.filter(name=subordinate_name).exists():
+        subordinate = DetectorSubordinate.objects.create(lastTime=datetime.datetime.now(
             tz=timezone.utc))
-        slave.name = slave_name
+        subordinate.name = subordinate_name
     else:
-        slave = DetectorSlave.objects.get(name=slave_name)
-    for exp in Experiment.objects.filter(slave=slave).all():
+        subordinate = DetectorSubordinate.objects.get(name=subordinate_name)
+    for exp in Experiment.objects.filter(subordinate=subordinate).all():
         exp.previewImage.save(str(datetime.datetime.now())+'.jpg', ContentFile(image_bytes))
 
 
 def add_data(request):
-    slave_name = request.GET["slave_name"]
+    subordinate_name = request.GET["subordinate_name"]
     x = request.GET["x"]
     y = request.GET["y"]
     w = request.GET["w"]
     h = request.GET["h"]
     trk_id = request.GET["trk_id"]
-    add_box(slave_name, x, y, w, h, trk_id)
+    add_box(subordinate_name, x, y, w, h, trk_id)
 
     html = "<html><body>Saved.</body></html>"
     return HttpResponseRedirect()
 
 def stop_exp(request, exp_id):
     exp = Experiment.objects.get(id=exp_id)
-    exp.slave = None
+    exp.subordinate = None
     exp.save()
     return redirect('exp:list')
 
@@ -137,23 +137,23 @@ def socket_daemon():
     import socket
 
     def client_thread(conn):
-        slave_name = conn.recv(10240).decode()
+        subordinate_name = conn.recv(10240).decode()
         picture_buffer = b""
-        print("Name: " + slave_name)
+        print("Name: " + subordinate_name)
         while True:
             data = conn.recv(10240)
             if data.startswith(b"Detections: "):
                 data = np.frombuffer(data[12:], dtype=np.uint16).reshape(-1, 6)
                 d = data[data[..., -1].argmax()]
                 trk_id, x, y, w, h, score = d
-                add_box(slave_name, x, y, w, h, trk_id)
+                add_box(subordinate_name, x, y, w, h, trk_id)
                 print(data)
                 if picture_buffer:
-                    add_img(slave_name, picture_buffer)
+                    add_img(subordinate_name, picture_buffer)
                 picture_buffer = b""
             elif data.startswith(b"\xff\xd8\xff\xe0"):
                 if picture_buffer:
-                    add_img(slave_name, picture_buffer)
+                    add_img(subordinate_name, picture_buffer)
                 picture_buffer = data
             else:
                 picture_buffer += data

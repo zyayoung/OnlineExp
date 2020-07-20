@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='DetectorSlave',
+            name='DetectorSubordinate',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.TextField(default='Untitled')),
@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
                 ('createTime', models.DateTimeField(auto_now_add=True)),
                 ('previewImage', models.ImageField(blank=True, upload_to='previewImg/%Y/%m/%d')),
                 ('region_of_interests', models.ManyToManyField(blank=True, to='live_experiment.RegionOfInterest')),
-                ('slave', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='live_experiment.DetectorSlave')),
+                ('subordinate', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='live_experiment.DetectorSubordinate')),
             ],
         ),
         migrations.CreateModel(

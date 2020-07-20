@@ -43,7 +43,7 @@ def clientthread(conn):
         # else:
         #     data = np.frombuffer(data, dtype=np.uint8).reshape(-1, 6)
         #     # for d in data:
-        #     #     url = f"{MASTER_URL}?slave_name={name}&trk_id={d[0]}&x={d[1]}&y={d[2]}&w={d[3]}&h={d[4]}"
+        #     #     url = f"{MASTER_URL}?subordinate_name={name}&trk_id={d[0]}&x={d[1]}&y={d[2]}&w={d[3]}&h={d[4]}"
         #     #     upload_thread = Thread(target=urlopen, args=(url,), daemon=True)
         #     #     upload_thread.start()
         #     print(data)

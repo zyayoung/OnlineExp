@@ -4,7 +4,7 @@ import datetime
 
 from django.utils import timezone
 
-class DetectorSlave(models.Model):
+class DetectorSubordinate(models.Model):
     name = models.TextField(default="Untitled")
     createTime = models.DateTimeField(auto_now_add=True)
     lastTime = models.DateTimeField()
@@ -34,12 +34,12 @@ class RegionOfInterest(models.Model):
 class Experiment(models.Model):
     name = models.TextField(default="Untitled")
     createTime = models.DateTimeField(auto_now_add=True)
-    slave = models.ForeignKey(DetectorSlave, on_delete=models.SET_NULL, null=True, blank=True)
+    subordinate = models.ForeignKey(DetectorSubordinate, on_delete=models.SET_NULL, null=True, blank=True)
     previewImage = models.ImageField(upload_to="previewImg/%Y/%m/%d", blank=True)
     region_of_interests = models.ManyToManyField(RegionOfInterest, blank=True)
 
     def state(self):
-        return "running" if self.slave else "waiting"
+        return "running" if self.subordinate else "waiting"
 
     def last_active(self):
         return datetime.datetime.now(tz=timezone.utc) - Box.objects.filter(exp=self).latest('time').time
